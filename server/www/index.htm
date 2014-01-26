@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="robots" content="NOINDEX, NOFOLLOW" />
+<meta charset="utf-8">
+  <title>Text Farm Web API Services</title>
+  <meta name="description" content="web services">
+  <link href="index.css" rel="stylesheet" type="text/css" media="all">
+</head>
+<!-- The webpage template was adapt and modified from http://krisjordan.com -->
+<body class="tf">
+<div id="container">
+     <header>
+        <h2><a href="http://textfarm.no-ip.org/">Text Farm</a></h2><br />
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>                
+				<li><a href="/">API Guidelines</a></li>
+				<li><a href="/api/">API</a></li>
+				<li><a href="/packages/">Packages</a></li>
+				<li><a href="mailto:null">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+	
+<article class="content">
+<h1>TextFarm Web Services - API Guidelines</h1>
+<div class="meta">July 2012</div><br />
+<div align="center"><strong>Welcome to 'TextFarm'</strong></div><br />
+<p>
+TextFarm provides a simple, RESTful API interface for uploading text based content for your utilization. It's features is fully accessible to all party and ready to be implement and integrated on any websites and applications.</p>
+<br /><br />
+<p>
+This is the TextFarm developers API documentation page. You can find all the information you need to get started with our API here. If you have questions, feel free to <a href="mailto:null">contact us</a>. If you are developer who utilizes TextFarm API, please share your experiences and your API client libraries with us as you might benefit others as well. Do not hesitate to contact us, we will consider to feature your creation on our site. If you have any idea on new feature and wish to have some API adjustments regarding your needs, send a request to let us know.</p>
+<br /><br />
+<div>
+<p>The API guidelines describe and detailing usages of the web services through libcurl in PHP script. Always at your convenience you may as well to invoke the web services directly from <a href="http://curl.haxx.se/" target="_blank">cURL</a> CLI.</p>
+<br /><br />
+</div>
+
+<h4 style="margin: 10px 10px 10px 48px"><strong>Contents Table :</strong></h4>
+<div style="margin: 8px 0 0 30px">
+<pre style="background:grey;max-width:500px">
+1.1.  <a href="#userRegistration">User Registration</a><br />
+1.2.  <a href="#privatePassphrase">Refresh Private Passphrase</a><br />
+1.3.  <a href="#publicPassphrase">Create/Refresh Public Passphrase</a><br />
+2.1.  <a href="#content_insert">Basic Content Serving - Uploading</a><br />
+2.2.  <a href="#content_retrieve">Basic Content Serving - Downloading</a><br />
+3.1.  <a href="#authkeys_generation">Authorize Keys Generation</a><br />
+3.2.  <a href="#authkeys_update">Toggle Authorize Keys State</a><br />
+3.3.  <a href="#enhanced_content_retrieve">Enhanced Content Serving -  Downloading Private Content</a><br />
+3.4.  <a href="#enhanced_content_retrieve_get">Enhanced Content Serving - Using 'GET' Content</a><br />
+4.1.  <a href="#directory_list">Directory Management - Listing</a><br />
+4.2.  <a href="#directory_update">Directory Management - Updates Content Metadata</a><br />
+5.1.  <a href="#arguments_parsing">Optional Parameters Tweaking for Content Download</a><br />
+6.1.  <a href="#xml_manipulation">Experimental Feature: Simple XML Manipulation</a><br />
+</pre>
+</div>
+<br /><hr />
+
+<div>
+<a name="userRegistration"></a><br />
+<h2 ><strong>ღ</strong>&nbsp;&nbsp; 1.1. User Registration</h2>
+<p>The registration API provide guiding to boot start as a fresh TextFarm user, consisting only simple step to user desire user name and password to the user registration interface. As minimal security measure, the user name and password fields are required to be encapsulate under HTTP POST parameters properly.
+</p>
+<br />
+<p>
+TextFarm will sending the meaningful response message back to the subscriber upon successful API call. For the case total 40 words of private passphrase will be held in response message on registration suceed, else an error message which specify the caused. Newly TextFarm subscribers are advised to record down the private passphrase for later use.
+</p>
+<br />
+<p>
+Please pay close attentions on the idea, similar posting procedures were being used in serveral API later.
+</p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$url='http://textfarm.no-ip.org/api/register/';
+
+$username='textfarm_user';
+$password='textfarm_password';
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'username='.$username.'&password='.$password.'');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* User Registration Suceed */
+fffa9f30f87a619409e20b6688561ebc08e7b12f // User's Private Passphrase
+
+	/* OR */
+
+/* User Registration Fail */
+204 No Content // User Existed
+
+	/* OR */
+
+/* User Registration Fail */
+403 Forbidden // Invalid Request
+</pre>
+</div>
+
+
+<br /><hr />
+<a name="privatePassphrase"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 1.2. Refresh Private Passphrase</h2>
+<p>
+The private passphrase is meant for user identification without presenting user name and password on every transaction. Thus, the subscribers must kept tight on their personal private passphrase.
+</p>
+<br />
+<p>
+In case a subscriber lost his personal private passphrase, he may post a passphrase regeneration requst with his user name and password for a new one. Furthermore if someones feels that the existing private passphrase is unsecured already, he may also use it to post a request for passphrase regeneration which regenerating a passphrase to replace the existing's.
+</p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$url='http://textfarm.no-ip.org/passphrase/private/';
+
+$username='username';
+$password='password';
+	/* OR */
+$privatephrase = 'e7496dd22d85e814046a559cca0d3cc2ce2c0e4d';
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+
+// Enable below IF using $username & $password
+//curl_setopt($ch, CURLOPT_POSTFIELDS, 'username='.$username.'&password='.$password.'');
+// Enable below IF using $privatephrase
+//curl_setopt($ch, CURLOPT_POSTFIELDS, 'privatephrase='.$privatephrase);
+
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* User Private Passphrase Regenerated */
+b0ef03e1d35c3185e0fa04671d23dc22a740e55a // Private Passphrase
+
+	/* OR */
+
+/* Private Passphrase Regeneration Fail */
+204 No Content // Invalid Password or Private Passphrase posted
+
+	/* OR */
+
+/* Private Passphrase Regeneration Fail */
+403 Forbidden // Invalid Request
+</pre>
+</div>
+
+
+<br /><hr />
+<a name="publicPassphrase"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 1.3. Create/Refresh Public Passphrase</h2>
+<p>In opposition to the private passphrase, public passphrase is generated for publicity usage. It is an user specific passphrase to be appended along while retrieving content from TextFarm repository.
+</p>
+<br />
+<p>
+Note that public passphrase need to be manually request for generation for first time after user registration. The public passphrase may also be regenerated on purposed to re-inforce security concerns.
+</p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$url='http://textfarm.no-ip.org/api/passphrase/public/';
+
+$privatephrase='b0ef03e1d35c3185e0fa04671d23dc22a740e55a';
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'privatephrase='.$privatephrase);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* User Public Passphrase Regenerated / Created */
+b0ef03e1d35c3185e0fa04671d23dc22a740e55a // Public Passphrase
+
+	/* OR */
+
+/* Public Passphrase Regeneration Fail */
+204 No Content // Invalid Private Passphrase posted
+
+	/* OR */
+
+/* Public Passphrase Regeneration Fail */
+403 Forbidden // Invalid Request
+</pre>
+</div>
+
+
+<br /><hr />
+<a name="content_insert"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 2.1. Basic Content Serving - Uploading</h2>
+<p>The content uploading service is first fundamental features provide by TextFarm, the subscribers may trigger file upload and delivers their data onto the web services. By default TextFarm treating all upload data as encoded in 'utf-8' which was a common pratice recommended by W3C. However, content requester may force encoding conversion while requesting it.
+</p>
+<br />
+<p>
+Subscribers are require to specify permission parameter whether they want the content to be publicly available.
+<br />&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp; Contents with <strong>public</strong> permission flag available to anyone who has the content id and content owner's public passphrase.
+<br />&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp; Contents with <strong>private</strong> permission flag can only be retrieve if it had any active authorize keys assigned to it. Thus, the requester need to presents both content specific authorize keys and content owner's public passphrase on request. (Authorize Keys will be covers in Section 3)
+</p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$url='http://textfarm.no-ip.org/api/content/insert/'
+
+/* TextFarm only accept 16MB content as maximum filesize */
+
+// Enable this section if want to upload from local file
+//$filePath='C:\textfarm.sample';
+//$fp=fopen($filePath, 'r');
+//$content=fread($fp, filesize($filePath));
+//$content=addslashes($content);
+//fclose($fp);
+	/* OR */
+$content='Hello World, Foo';
+
+$privatephrase='b0ef03e1d35c3185e0fa04671d23dc22a740e55a';
+$filename='textfarm.sample';
+$permission='private'; // 'public' or 'private'
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'privatephrase='.$privatephrase.'&filename='.$filename.
+'&permission='.$permission.'&content='.$content);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* Content Added into TextFarm Repository */
+25 // Content ID
+
+	/* OR */
+
+/* Content Not Accept by TextFarm */
+403 Forbidden // Zero or many invalid post fields posted
+</pre>
+</div>
+
+
+<br /><hr />
+<a name="content_retrieve"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 2.2. Basic Content Serving - Downloading</h2>
+<p>The content downloading service is the second fundamental features provide by TextFarm, the content requester can request for a <strong>public</strong> content using its id and owner's public passphrase.
+<p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$publicphrase='9d4e1e23bd5b727046a9e3b4b7db57bd8d6ee684';
+$fileID='21';
+
+$url='http://textfarm.no-ip.org/api/content/retrieve/' . $fileID;
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'publicphrase='.$publicphrase);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* Request Content Served */
+Hello World as example file content.
+
+	/* OR */
+
+/* Private Content Requested */
+403 Forbidden // Unauthorized Request
+
+	/* OR */
+
+/* Requested Content Not Existed */
+404 Not Found // Invalid Content ID posted
+
+	/* OR */
+
+/* Public Passphrase Verification Fail */
+403 Forbidden // Invalid Public Passphrase posted
+</pre>
+</div>
+
+
+<br /><hr />
+<a name="authkeys_generation"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 3.1. Authorize Keys Generation</h2>
+<p>The basic content serving service eventuality left out the capability to retrieve private flagged content. Under this section, TextFarm introduced Authorize Keys to offer a more secured approach to minimize security concerns on retrieving <strong>private</strong> content.
+<br /><br />
+</p>
+<p>
+A subscriber can make uses of his private passphrase to create authorize keys which enclosure to a specific private content on TextFarm repository. To minimizing the threat of keys sharing, multiple authorize keys can be created for single content. While the authorize keys came with an active flag which can be toggle into inactive state after used to invalidates itself.
+<br />
+</p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$privatephrase='74135691b87b37sbd676e2718313656f081164f98';
+$fileID='22';
+
+$url='http://textfarm.no-ip.org/api/authkeys/create/' . $fileID;
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'privatephrase='.$privatephrase);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* Authorize Keys Generated */
+72a3d1dd60dd9c81f005225298b9c1453021e405 // Authorize Keys for Designated Content
+
+	/* OR */
+
+/* Requesting Authorize Keys Generation on Public Content */
+403 Forbidden // Invalid Request Posted
+
+	/* OR */
+
+/* Private Passphrase Verification Fail */
+403 Forbidden // Invalid Private Passphrase posted
+</pre>
+</div>
+
+<br /><hr />
+<a name="authkeys_update"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 3.2. Toggle Authorize Keys State</h2>
+<p>As emphasized at previous section, an authorize keys always comes with an active permission flag. The flag enable any user an oppurtunity to retrieve private content from TextFarm repository. To enhances the maneuverability of authorize keys, TextFarm then offers its subscribers ability to toggle the permission flag into inactive state to close up the retrieval window.
+<br />
+</p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$privatephrase='74135691b87b37bd676e2718313656f081164f98';
+$authkeys='a521bf40bac6952fe7f61571769470dd24ad8dce';
+$authstate='activate'; // 'activate' or 'deactivate'
+
+$url='http://textfarm.no-ip.org/api/authkeys/'.$authstate.'/'.$authkeys.'/';
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'privatephrase='.$privatephrase);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* Authorize Keys State Updated */
+200 OK // Target Authorize Keys status updated
+
+	/* OR */
+
+/* Authorize Keys Status Update Fail */
+403 Forbidden // Authorize Keys already in targeted state
+
+	/* OR */
+
+/* Private Passphrase or Authorize Keys Verification Fail */
+403 Forbidden // Invalid Private Passphrase or Authorize Keys posted
+</pre>
+</div>
+
+
+<br /><hr />
+<a name="enhanced_content_retrieve"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 3.3. Enhanced Content Serving -  Downloading Private Content</h2>
+<p>The content requester can request for a private content using its authorize keys and owner's public passphrase. While the presences of authorize keys enclosed the cotent id by replacing it on the request url. The access control for private content are now fully controllable under owner consent.
+</p>
+<br />
+<p>
+As inherited from section <a href="#content_retrieve">2.2</a>, simply swap the content id to authorize keys to make a request to retrieve a private content.
+</p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$publicphrase='9d4e1e23bd5b727046a9e3b4b7db57bd8d6ee684';
+$authKeys='e52abbdac3568ef96bbab0f74128c3c77621e608';  // private content's authorize keys
+
+$url='http://textfarm.no-ip.org/api/content/retrieve/' . $authKeys . '/';
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'publicphrase='.$publicphrase);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+curl_setopt($ch, CURLOPT_HEADER, 1);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* Request Content Served */
+Hello World as example file content.
+
+	/* OR */
+
+/* Requested Content Not Existed */
+404 Not Found // Invalid Authorize Keys posted
+
+	/* OR */
+
+/* Requested Content Not Accessible */
+404 Not Found // Authorize Keys is under inactive state
+
+	/* OR */
+
+/* Public Passphrase or Authorize Keys Verification Fail */
+403 Forbidden // Invalid Public Passphrase or Authorize Keys posted
+</pre>
+</div>
+
+
+<br /><hr />
+<a name="enhanced_content_retrieve_get"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 3.4. Enhanced Content Serving - Using 'GET' Content</h2>
+<p>The content retrieval(download) procedures mentioned so far are demanding on HTTP Post method which reckon to be less browser friendly. To achieves simplex and more friendly, TextFarm implement alternative ways to retrieve content utilizing HTTP Get method. With the support, user can directly requst for content on browser address bar.
+</p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : GET
+<hr />$publicphrase='9d4e1e23bd5b727046a9e3b4b7db57bd8d6ee684';
+$authKeys='e52abbdac3568ef96bbab0f74128c3c77621e608';	// private content's authorize keys
+$fileID='17';						// public content ID
+
+// Private Content Retrieval
+$url='http://textfarm.no-ip.org/api/content/retrieve/' . $authKeys . '/'. $publicphrase . '/';
+	/* OR */	
+// Public Content Retrieval
+$url='http://textfarm.no-ip.org/api/content/retrieve/' . $fileID . '/'. $publicphrase . '/';
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+curl_setopt($ch, CURLOPT_HEADER, 1);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* Same Responses as Using HTTP 'POST' */
+</pre>
+</div>
+
+
+<br /><hr />
+<a name="directory_list"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 4.1. Directory Management - Listing</h2>
+<p>Managerial is crucial for a web services like TextFarm who acted as an online data repository. Therefore, TextFarm provides a directory listing function to offers subscribers an overview on their content repository.
+</p>
+
+<br />
+<p>Through invoking the directory listing API subscribers will received a XML file with layers of identation and containing the summarization of his personal repository on TextFarm. Full-length URLs for direct linking access using HTTP Get Method are also included to make ease the subscribers for content sharing.
+<p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$url='http://textfarm.no-ip.org/api/directory/list/';
+
+$privatephrase='74135691b87b37bd676e2718313656f081164f98';
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'privatephrase='.$privatephrase);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+
+// Force browser to render xml as text for better visualisation
+header('Content-type: ' . 'text/plain');
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* Private Passphrase Verification Fail */
+403 Forbidden // Invalid Private Passphrase posted
+
+	/* OR */
+
+/* User's Directory Listed */
+206 Partial Content // Received user's directory list in XML format
+
+<hr />Example Directory List :-
+<hr />&lt;textfarm&gt;
+
+  &lt;user userID=&quot;&quot; registerDate=&quot;&quot;&gt;
+    &lt;privatePassphrase&gt;&lt;/privatePassphrase&gt;
+    &lt;publicPassphrase&gt;&lt;/publicPassphrase&gt;
+  &lt;user&gt;
+  
+  &lt;directory&gt;
+    &lt;content fileID=&quot;&quot; fileName=&quot;&quot; contentSize=&quot;&quot; permission=&quot;public&quot; /&gt;
+      &lt;link url=&quot;http://textfarm.no-ip.org/api/content/retrieve/$fileID&quot; /&gt;
+    &lt;/content&gt;
+    &lt;content fileID=&quot;&quot; fileName=&quot;&quot; contentSize=&quot;&quot; permission=&quot;private&quot;&gt;
+      &lt;authorize authKeys=&quot;&quot; status=&quot;inactive&quot; /&gt;
+      &lt;authorize authKeys=&quot;&quot; status=&quot;active&quot;&gt;
+        &lt;link url=&quot;http://textfarm.no-ip.org/api/content/retrieve/$fileID/$authKeys&quot; /&gt;
+      &lt;/authorize&gt;
+    &lt;/content&gt;		
+  &lt;/directory&gt;
+  
+&lt;/textfarm&gt;
+</pre>
+</div>
+
+<br /><hr />
+<a name="directory_update"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 4.2. Directory Management - Updates Content Metadata</h2>
+<p>
+TextFarm offers additional functionality under directory management API, the interface allows subscribers to updates content file name and permission without re-upload. The subscribers can ignore either one on making request if no change needed.
+</p>
+
+<br />API Request : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$privatephrase='74135691b87bd37bd676e2718313656f081164f98';
+$fileID='15';
+$fileName='textfarm.sample';	// (Optional Parameter) your desire new filename
+$permission='public';		// (Optional Parameter) 'public' or 'private'
+
+$url='http://textfarm.no-ip.org/api/directory/move/'.$fileID.'/';
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'privatephrase='.$privatephrase.'&fileName='.$fileName.
+'&permission='.$permission);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* Content States Updated */
+200 OK // Content states successfully update
+
+	/* OR */
+
+/* Requested Content Not Existed */
+404 Not Found // Invalid Content ID posted
+
+	/* OR */
+	
+/* New States Not Accept by TextFarm */
+403 Forbidden // Invalid new Content Name or Permission posted
+
+	/* OR */
+	
+/* Private Passphrase Verification Fail */
+403 Forbidden // Invalid Private Passphrase posted	
+</pre>
+</div>
+
+
+<br /><hr />
+<a name="arguments_parsing"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 5.1. Optional Parameters Tweaking for Content Download</h2>
+<p>TextFarm will handover content as downloadable attachment on retrieval by default. The behaviour may be overrides if relavant parameters posted along on the request headers. The parameters tweaking is supporting on both public and private retrieval, it can be done by simply append these parameters while requesting content.</p>
+<br />
+<p>
+This arbitrary set of tweaks are optional parameters, the content requester is free to specify any of them on their content request. If any paramater value appears to be unsupported or invalid, TextFarm's arguments parsing service will auto fallback to its default value and content will be served as usual.
+<br /><br />
+
+<strong>Warning :</strong> These tweaks require to be HTTP Post method parameters, direct url access on browser address bar utilizing HTTP Get method doesn't comply with this.
+<br /><br />
+<p>Supported Parameters :-</p>
+<br />&nbsp;&nbsp; <strong>attachment</strong> // tell browser to display or force download the content.
+<br />&nbsp;&nbsp; <strong>mime</strong> // specify MIME type of content, to be handle by browser.
+<br />&nbsp;&nbsp; <strong>encoding</strong> // whether to do encoding conversion on TextFarm.
+<br />&nbsp;&nbsp; <strong>fileName</strong> // file name for the content.
+<br />&nbsp;&nbsp; <strong>fileExt</strong> // file extension for the content.
+</p>
+
+<br />Content Serving with Optional Parameters (On Retrieve) : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />$publicphrase='9d4e1e23bd5b727046a9e3b4b7db57bd8d6ee684';
+$fileID='16';
+
+$attachment = 'false'; // (Optional Parameter) [DETAILS BELOW]
+$mime='text/plain';    // (Optional Parameter) [DETAILS BELOW]
+$encoding='UTF8';      // (Optional Parameter) [DETAILS BELOW]
+$fileName='textfarm';  // (Optional Parameter) specify your desire file name
+$fileExt ='sample';    // (Optional Parameter) specify your desire file extension
+
+$url = 'http://textfarm.no-ip.org/api/content/retrieve/' . $fileID . '/';
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'publicphrase='.$publicphrase.'&mime='.$mime
+.'&encoding='.$encoding.'&fileName='.$fileName.'&fileExt='.$fileExt.'&attachment='.$attachment);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+curl_setopt($ch, CURLOPT_HEADER, 1);
+
+// Force browser to render as text for better visualisation
+header('Content-type: ' . 'text/plain');
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre><br />
+
+
+Default HTTP Headers (No Optional Parameters Specified) : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Request Headers 
+<hr />  Request URL			: http://textfarm.no-ip.org/api
+  Request Method		: GET
+  Post Fields		 	: [all parameter required to retrieve content]
+  Status Code			: HTTP/1.1 200 OK
+  
+<hr />HTTP Response Headers
+<hr />  X-Powered-By			: PHP/5.4.6
+  Server			: Apache/2.4.3 (Win32) PHP/5.4.6
+  Keep-Alive			: timeout=5, max=100
+  Date				: Tue, 21 August 2012 15:38:54 GMT
+  Content-Type			: text/html; charset=utf-8
+  Content-Length		: 550
+  Connection			: Keep-Alive
+  Content-Disposition		: attachment; filename=database_filename.sample
+</pre><br />
+
+Customize Content-Disposition (Optional Parameter) : - 
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Request Headers 
+<hr />  Request URL			: http://textfarm.no-ip.org/api/content/retrieve/$fileID/
+  Request Method		: POST
+  Post Fields		 	: $attachment=false
+  Status Code			: HTTP/1.1 200 OK
+
+<hr />HTTP Response Headers
+<hr />  Content-Disposition		: attachment; filename=database_filename.sample (default response)
+<hr />
+  Supported Content-Disposition Return Types : -
+  
+    true  // attachment, a.k.a. forced download
+    false // inline
+</pre><br />
+
+Customize Content-Type (Optional Parameter) :-
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Request Headers 
+<hr />  Request URL			: http://textfarm.no-ip.org/api/content/retrieve/$fileID/
+  Request Method		: POST
+  Post Fields		 	: mime=text/html
+  Status Code			: HTTP/1.1 200 OK
+  
+<hr />HTTP Response Headers
+<hr />  Content-Type			: text/html; charset=utf-8 (default response)
+<hr />
+  Supported MIME Return Types :-
+
+    text/css
+    text/csv
+    text/html
+    text/plain
+    text/vcard
+    text/xml
+    image/svg+xml
+    application/atom+xml
+    application/ecmascript
+    application/json
+    application/javascript
+    application/octet-stream
+    application/rss+xml
+    application/soap+xml
+    application/xhtml+xml
+    application/xml-dtd
+    application/zip
+    application/gzip
+</pre><br />
+
+Encoding Auto Conversion (Optional Parameter) : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Request Headers 
+<hr />  Request URL			: http://textfarm.no-ip.org/api/content/retrieve/$fileID/
+  Request Method		: POST
+  Post Fields		 	: encoding=UTF8
+  Status Code			: HTTP/1.1 200 OK
+
+<hr />HTTP Response Headers
+<hr />  N/A. (default response assumed content is utf8. if encoding parameter specified
+        TextFarm will convert the content encoding from utf8 to whatever encoding below.)
+<hr />
+  Supported Encoding Auto Conversion Types :-
+
+    UTF32
+    UTF32BE
+    UTF32LE
+    UTF16
+    UTF16BE
+    UTF16LE
+    UTF7
+    UTF8
+    ASCII
+    EUCJP
+    JIS
+    ISO88591
+    EUCCN
+    EUCTW
+</pre>
+</div>
+
+<br /><hr />
+<a name="xml_manipulation"></a><br />
+<div>
+<h2><strong>ღ</strong>&nbsp; 6.1. Experimental Feature: Simple XML Manipulation</h2>
+<p>This feature showing how the futures expansibility of TextFarm could take place in. The relatively experimental API offering some simple XML manipulation functionalities for content requesters and subcribers.
+
+TextFarm is suggested
+The most significant service improvements for implementing this xml manipulation service is
+subcribers will be able to updates their XML formatted content without having to re-upload the whole content every time.
+
+</p>
+
+<br />
+<p>
+This xml manipulation service can be apply on both situation while user retrieving content and subcribers updating content.
+
+<br /><br />If designated xml manipulation parameters presented on API calls below :
+<br />&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp; On <strong>retrieving</strong> XML content(download), the XML content will be parsed in memory before handing it out to the requester. The original XML content remains untouched.
+<br />&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp; On <strong>updating</strong> XML content, the XML will be parsed and storing back on TextFarm repository. Prior to the next retrieval request, the updated version of XML content will be serve instead.
+</p>
+
+<br /><br />API Request (On retrieve request): -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Method : POST
+<hr />/*	Adding a new node into XML on retrieval content,	*/
+/*	actual content stored on Textfarm remains unchanged.	*/
+
+$action='add';			// (Optional Parameter) Informing TextFarm to append a node from XML 
+$nameSpace='Books';		// REQUIRED, XML root node name
+$nodeName='book';		// REQUIRED, Node name to be append
+$attribute='title';		// OPTIONAL, Attribute name of $nodeName
+$value='harry potter ep4';	// OPTIONAL, Attribute value of $nodeName
+
+	/* OR */
+	
+/* 	Removing specific node from XML on retrieval content,	*/
+/*	actual content stored on Textfarm remains unchanged.	*/
+
+$action='remove';		// (Optional Parameter) Informing TextFarm to remove specific node from XML
+$nameSpace='Books';		// REQUIRED, XML root node name
+$nodeName='book';		// REQUIRED, Node to be remove if attribute matched
+$attribute='title';		// REQUIRED, attribute name
+$value='harry potter ep2';	// REQUIRED, attribute value
+<hr />$publicphrase='9d4e1e23bd5b727046a9e3b4b7db57bd8d6ee684';
+$authKeys='2de304f2d71cbee360aa079f6cb26b86be1a2dc1';  // IF retrieving private content
+$fileID='21';			// IF retrieving public content
+$mime='text/xml';		// MIME parameter, will be describe at next section.
+
+$url='http://textfarm.no-ip.org/api/content/retrieve/'.$fileID.'/';  // Substitutable using $authKeys
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, 'publicphrase='.$publicphrase.'&mime='.$mime.
+'&action='.$action.'&nameSpace='.$nameSpace.'&nodeName='.$nodeName.'&attribute='.$attribute.'&value='.$value);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_VERBOSE, 1);
+curl_setopt($ch, CURLOPT_NOBODY, 0);
+curl_setopt($ch, CURLOPT_HEADER, 1);
+
+// Force browser to render xml as text for better visualisation
+header('Content-type: ' . 'text/plain'); 
+
+$response = curl_exec($ch);
+$info = curl_getinfo($ch);
+echo $response;
+curl_close($ch);
+</pre>
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+/* The responses are the same as on any content serving request */
+
+/* Nothing will be done if posting this XML manipulation request targeted at non-xml contents */
+
+/* TextFarm always automatically fallback to its default content if parameters invalidation occured */
+</pre>
+
+<br /><br />Additional Tip : Subcribers can updates their XML content stored on TextFarm using the parameters above via swapping the request url.
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Request Headers 
+<hr />HTTP Method : POST
+
+	/* FROM */
+  Request URL (Public Content)	: http://textfarm.no-ip.org/api/content/retrieve/.$fileID OR $authKeys./
+  Post Fields		 	: publicphrase=...
+
+	/* TO */  
+  Request URL (Private Content)	: http://textfarm.no-ip.org/api/content/insert/.$fileID./
+  Post Fields		 	: privatephrase=...
+
+</pre>
+
+
+API Responses : -
+<pre class="php" name="code" style="word-wrap:break-word">
+HTTP Response Headers
+<hr />/* XML Content Updated */
+200 OK // Content update successfully
+
+	/* OR */
+
+/* Content Manipulation Action Denied */
+403 Forbidden // Invalid Action field posted
+
+
+	/* OR */
+
+/* Private Passphrase Verification Fail */
+403 Forbidden // Invalid Private Passphrase posted
+</pre>
+<br /></div>
+
+<hr /><br />
+<div>
+<h2><strong>ღ</strong>&nbsp;Find yourself a suitable rest-client</h2>
+<p>To makes it easier to execute any HTTP Method on TextFarm API URL endpoints. You can simulate the API request using accessible rest-clients and inspect the result on the response headers and data. Besides the cURL and libcurl(php variant of cURL) introduced in the guide, wide ranges of tools are already available on multi-platform. No need to constraint under single tool, find and utilize your favor one based on your skills.
+</p>
+<br />
+<p>
+Since web API operations not limited by Operating Systems. Cross-platform tools are worth considerable too, here is two notable cross-platform tools: <a href="http://code.google.com/p/poster-extension/" target"_blank">POSTER</a> Firefox extension and Java-based <a href="http://code.google.com/p/rest-client/" target"_blank">rest-client</a>.
+</p>
+<br />
+
+<p>
+If you still preferung the de facto cURL client for testing. The conversion process is ease as libcurl scripts in the guide are mostly identical to cURL.
+<br /><br />
+ 
+<strong>cURL Example Usage &amp; Common Parameters :</strong>
+<pre># curl -X POST http://textfarm.no-ip.org/api/ -d "name=value" -d "field2=c4d5e6" -H "Accept: text/html" -I</pre>
+<br />&nbsp; &nbsp;<strong>-X [METHOD]</strong> Specify the HTTP method.
+<br />&nbsp; &nbsp;<strong>-d "name=value"</strong> Set a POST field name and value.
+<br />&nbsp; &nbsp;<strong>-H [HEADER]</strong> Set a header.
+<br />&nbsp; &nbsp;<strong>-I</strong> Only display response's headers.
+</p>
+</div><br />
+<hr /><br />
+
+<div>
+<h3>&nbsp; &nbsp;Enjoy!</h3>
+<br />
+<p>
+Feel free to provide us the librabries you built for TextFarm. There are always welcome no matter you created them in Javascript, C#, ASP.Net, Objective-C, Python, Ruby and ect.  Most of the programming languages should work very well with us as TextFarm API operates over the Hypertext Transfer Protocol. However, the submitted libraries are not responsible of TextFarm, we have little to no responsibility to support their further development.
+</p><br />
+</div>
+<hr /><br />
+
+<div>
+<h3><strong>ღ</strong>&nbsp; TextFarm Developer's Notes</h3>
+<br />
+<p>
+The development of TextFarm embracing REST-compliant web services for its simplistic, ability to performs a uniform set of "stateless" operations and arbitrary sets of service. REST approaches also rather new, loosely coupled, capable to go beyond the strict restrictions posed by its opposite, the comprehensive SOAP based protocol.
+</p>
+<br />
+<p>
+REST is an architectural style, or set of conventions, for web services that centers itself around resource manipulation and HTTP specifications. With REST, every piece of its resource has its own URL.
+</p>
+<br />
+<p>
+Web applications had long tradition ignoring HTTP specifications offers by utilizing mainly on a subset of the protocol: GET and POST, 200 OK and 404 NOT FOUND. The behaviour has lead to poor HTTP specs support across web browsers, focusing on HTTP GET and POST only. As we enter programmable web era the growth of web APIs are blooming, today we are still dealing with decision to ignore full implementation on HTTP specifications as consequence it might gave us problems on broswer.
+</p>
+<br />
+<p>
+Newly emerging web services have started the pilgrimage to the full implementation on HTTP specifications by adding support of HTTP PUT and DELETE Method. REST experts recommending the utilization of HTTP DELETE Method for resources deletion and HTTP PUT Method for resource updates. However the developer decides for not comply to the practice in order to avoid browsers compatibility on the web services but promise alternative PUT and DELETE if possible in future.
+</p>
+<br />
+<p>
+At least stills on current stage, TextFarm providings an full internet enabled application with two different interfaces (HTTP GET and POST Method).
+<br />
+<br />
+For more details on REST check out <a href="http://en.wikipedia.org/wiki/REST" target"_blank">Wikipedia</a>.
+</p>
+
+<br /><br />
+<br /><br />
+</article>		  
+        <footer>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>                
+				<li><a href="/">API Guidelines</a></li>
+				<li><a href="/api/">API</a></li>
+				<li><a href="/packages/">Packages</a></li>
+				<li><a href="mailto:null">Contact</a></li>
+            </ul>
+        </nav>
+		<br />
+        <div id="copyright">Last modified on 23th January 2014<br />
+		Copyright © 2012-2014 <a href="mailto:null">Goh Liang Chi</a><br />
+		</div>
+    </footer>
+</div>
+</body></html>
